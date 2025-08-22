@@ -1,364 +1,457 @@
 <!DOCTYPE html>
-<html lang="vi" class="scroll-smooth">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thần Số Học Tương Tác: Hà Thị Ngọc Duyên</title>
+    <title>Phân Tích Thần Số Học: Hà Thị Ngọc Duyên</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Calm Harmony -->
-    <!-- Application Structure Plan: The SPA uses a thematic, narrative scroll structure. It starts with a high-level summary (Hero, interactive Energy Map), delves into specifics (interactive Birth Chart), visualizes the life path over time (Chart.js Timeline), and concludes with actionable advice. This user flow is designed for intuitive self-exploration, moving from 'who you are' to 'where you're going', which is more engaging than the original report's linear text format. -->
-    <!-- Visualization & Content Choices: Core Numbers -> Goal: Inform/Organize -> Viz: Interactive HTML cards -> Interaction: Click to reveal details -> Justification: Reduces initial clutter. | Birth Chart -> Goal: Organize/Inform -> Viz: HTML/CSS Grid -> Interaction: Click to see meanings -> Justification: Visually connects numbers to their positions, better for mobile. | Life Journey -> Goal: Show Change -> Viz: Chart.js Line Chart -> Interaction: Hover tooltips -> Justification: Intuitively shows progression and key stages over time. -> Library: Chart.js (Canvas). -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earthen Serenity -->
+    <!-- Application Structure Plan: The SPA uses a fixed sidebar navigation (transforming to a top bar on mobile) with a dynamic main content area. This structure was chosen over a simple linear report to empower the user with non-linear exploration, allowing them to jump directly to sections of interest like the Birth Chart or Life Journey. This dashboard-like approach enhances usability by presenting a clear overview first, then inviting deeper dives into specific data points, making the complex information more digestible and engaging. Key interactions include tab-based content switching for Core Numbers and an interactive timeline chart for Pinnacle Cycles. -->
+    <!-- Visualization & Content Choices: 
+    - Core Numbers: Report Info -> 5 core numbers & descriptions. Goal -> Inform & Compare. Viz -> Interactive tabs/cards. Interaction -> Click to reveal detailed text. Justification -> Avoids overwhelming the user with a long text wall; promotes focused reading. Method -> Vanilla JS DOM manipulation.
+    - Birth Chart: Report Info -> Numbers 1,2,3,5,9 present; 4,6,7,8 absent; Arrow 1-5-9. Goal -> Organize & Inform. Viz -> HTML/Tailwind CSS Grid. Interaction -> Static visual with highlighted arrow. Justification -> A grid is the most direct and intuitive representation of the source diagram. Highlighting the arrow draws immediate attention to a key strength. Method -> HTML/CSS.
+    - Pinnacle Cycles: Report Info -> 4 life stages with corresponding numbers and ages. Goal -> Show Change over time. Viz -> Stepped Line Chart. Interaction -> Static chart with supporting text. Justification -> A chart visualizes the life journey far more effectively than a table, showing the "flow" of life themes. Library -> Chart.js (Canvas).
+    - Development Advice: Report Info -> Actionable advice based on missing numbers. Goal -> Guide & Inform. Viz -> Accordion/collapsible sections. Interaction -> Click to expand/collapse. Justification -> Organizes advice cleanly, allowing the user to focus on one area at a time. Method -> Vanilla JS.
+    -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
-            font-family: 'Quicksand', sans-serif;
-            background-color: #FAF3E0; /* Warm Neutral Background */
-            color: #5D4037; /* Earthy Text Color */
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
         }
-        .accent-color { color: #E2725B; }
-        .accent-bg { background-color: #E2725B; }
-        .secondary-bg { background-color: #FFF8E1; }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link.active {
+            background-color: #D4A373;
+            color: #FEFAE0;
+            font-weight: 600;
+        }
+        .nav-link:hover:not(.active) {
+            background-color: #E9D8C8;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .tab-button.active {
+            background-color: #A98467;
+            color: white;
+            border-color: #A98467;
+        }
+        .birth-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            border: 2px solid #D4A373;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .birth-chart-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 1px solid #E9D8C8;
+            color: #A98467;
+            position: relative;
+        }
+        .birth-chart-cell.highlight {
+            background-color: #FEFAE0;
+        }
         .chart-container {
             position: relative;
             width: 100%;
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
-            height: 400px;
-            max-height: 50vh;
+            height: 300px;
+            max-height: 400px;
         }
-        .birth-chart-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            width: 240px;
-            height: 240px;
-            position: relative;
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
         }
-        .birth-chart-cell {
-            border: 1px solid #D7CCC8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #795548;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .arrow {
-            position: absolute;
-            background-color: rgba(226, 114, 91, 0.3);
-            pointer-events: none;
-            transition: background-color 0.3s;
-        }
-        .arrow-1-5-9 {
-            width: 100%;
-            height: 100%;
-            clip-path: polygon(0 80%, 20% 100%, 100% 20%, 80% 0);
-        }
-        .card-content {
+        .accordion-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-in-out;
-        }
-        .birth-chart-active {
-            background-color: #FFF8E1 !important;
-            border: 2px solid #E2725B !important;
+            transition: max-height 0.3s ease-out;
         }
     </style>
 </head>
 <body class="antialiased">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        <aside class="w-full lg:w-64 bg-[#FEFAE0] p-4 lg:p-6 shadow-md lg:fixed lg:h-full">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-[#A98467]">Hà Thị Ngọc Duyên</h1>
+                <p class="text-sm text-[#BC6C25]">25/03/1995</p>
+            </div>
+            <nav id="navigation" class="flex flex-row lg:flex-col justify-center lg:justify-start gap-2">
+                <a href="#tong-quan" class="nav-link active text-center lg:text-left p-3 rounded-lg">Tổng Quan</a>
+                <a href="#chi-so-cot-loi" class="nav-link text-center lg:text-left p-3 rounded-lg">Chỉ Số Cốt Lõi</a>
+                <a href="#bieu-do-ngay-sinh" class="nav-link text-center lg:text-left p-3 rounded-lg">Biểu Đồ Ngày Sinh</a>
+                <a href="#hanh-trinh-cuoc-doi" class="nav-link text-center lg:text-left p-3 rounded-lg">Hành Trình Cuộc Đời</a>
+                <a href="#loi-khuyen" class="nav-link text-center lg:text-left p-3 rounded-lg">Lời Khuyên Phát Triển</a>
+            </nav>
+        </aside>
 
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-sm shadow-md">
-        <nav class="container mx-auto px-6 py-3">
-            <div class="flex justify-between items-center">
-                <div class="text-xl font-bold text-gray-800">Hà Thị Ngọc Duyên</div>
-                <div class="hidden md:flex space-x-6">
-                    <a href="#tong-quan" class="hover:accent-color transition-colors">Tổng Quan</a>
-                    <a href="#bieu-do" class="hover:accent-color transition-colors">Biểu Đồ Ngày Sinh</a>
-                    <a href="#lo-trinh" class="hover:accent-color transition-colors">Lộ Trình Cuộc Đời</a>
-                    <a href="#loi-khuyen" class="hover:accent-color transition-colors">Lời Khuyên</a>
+        <main class="flex-1 lg:ml-64 p-4 sm:p-6 md:p-8">
+            <div id="tong-quan" class="content-section active">
+                <h2 class="text-3xl font-bold text-[#BC6C25] mb-4">Chào Duyên, Chào Mừng Đến Với Hành Trình Khám Phá Bản Thân!</h2>
+                <p class="mb-8 text-lg text-gray-700">Đây là tấm bản đồ năng lượng được thiết kế dành riêng cho bạn, giải mã những tiềm năng, bài học và con đường phía trước. Chân dung của bạn được khắc họa qua hình ảnh một <strong class="text-[#A98467]">"Nhà Lãnh Đạo Tĩnh Tại"</strong> - một người có nội lực mạnh mẽ, độc lập nhưng luôn tìm kiếm sự bình yên và chiều sâu từ bên trong.</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <p class="text-sm text-gray-500">Đường Đời</p>
+                        <p class="text-4xl font-bold text-[#D4A373]">7</p>
+                        <p class="text-xs text-gray-600">Người Tìm Kiếm Chân Lý</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <p class="text-sm text-gray-500">Sứ Mệnh</p>
+                        <p class="text-4xl font-bold text-[#D4A373]">1</p>
+                        <p class="text-xs text-gray-600">Người Tiên Phong</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <p class="text-sm text-gray-500">Linh Hồn</p>
+                        <p class="text-4xl font-bold text-[#D4A373]">6</p>
+                        <p class="text-xs text-gray-600">Tình Yêu & Hòa Hợp</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <p class="text-sm text-gray-500">Nhân Cách</p>
+                        <p class="text-4xl font-bold text-[#D4A373]">4</p>
+                        <p class="text-xs text-gray-600">Sự Ổn Định</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 col-span-2 md:col-span-1 lg:col-span-1">
+                        <p class="text-sm text-gray-500">Thái Độ</p>
+                        <p class="text-4xl font-bold text-[#D4A373]">8</p>
+                        <p class="text-xs text-gray-600">Sự Thực Thi</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-xl font-semibold text-[#A98467] mb-3">Sự Giao Thoa Năng Lượng</h3>
+                    <p class="text-gray-700">Sự kết hợp giữa **Đường Đời 7** (hướng nội, chiêm nghiệm) và **Sứ Mệnh 1** (tiên phong, độc lập) tạo nên một phong cách lãnh đạo độc đáo. Bạn không dẫn dắt bằng sự ồn ào, mà bằng chiều sâu trí tuệ và tấm gương về sự tự chủ. Khát khao yêu thương của **Linh Hồn 6** được cân bằng một cách khéo léo qua việc bạn chọn lựa những mối quan hệ chất lượng, "một vài người bạn thân hiền lành", thay vì số lượng.</p>
                 </div>
             </div>
-        </nav>
-    </header>
 
-    <main>
-        <section id="hero" class="text-center py-20 px-6 bg-cover bg-center" style="background-image: linear-gradient(rgba(250, 243, 224, 0.8), rgba(250, 243, 224, 1)), url('https://placehold.co/1200x600/FAF3E0/5D4037?text=+)');">
-            <h1 class="text-4xl md:text-6xl font-bold mb-4">Chào mừng chị Hà Thị Ngọc Duyên</h1>
-            <p class="text-xl md:text-2xl mb-2">Chân dung Thần số học của chị là:</p>
-            <h2 class="text-3xl md:text-5xl font-bold accent-color">Nhà Lãnh Đạo Trí Tuệ</h2>
-            <p class="max-w-3xl mx-auto mt-6 text-lg">
-                Một sự kết hợp độc đáo giữa chiều sâu nội tâm của nhà thông thái và bản lĩnh tiên phong của người lãnh đạo. Hành trình của chị là cân bằng giữa chiêm nghiệm và hành động, tạo nên một phong cách dẫn dắt đầy uyên bác và sâu sắc.
-            </p>
-        </section>
-
-        <section id="tong-quan" class="py-16 px-6">
-            <div class="container mx-auto">
-                <h2 class="text-3xl font-bold text-center mb-4">Bản Đồ Năng Lượng Cốt Lõi</h2>
-                <p class="text-center max-w-3xl mx-auto mb-12">
-                    Đây là những chỉ số nền tảng định hình nên con người chị. Hãy nhấp vào từng chỉ số để khám phá sâu hơn về điểm mạnh, thách thức và những khát vọng ẩn sâu bên trong.
-                </p>
-                <div id="core-numbers-grid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div id="chi-so-cot-loi" class="content-section">
+                <h2 class="text-3xl font-bold text-[#BC6C25] mb-6">La Bàn Nội Tâm - Các Con Số Cốt Lõi</h2>
+                <div id="core-numbers-tabs" class="flex flex-wrap gap-2 mb-6">
+                </div>
+                <div id="core-numbers-content" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 min-h-[300px]">
                 </div>
             </div>
-        </section>
 
-        <section id="bieu-do" class="py-16 px-6 secondary-bg">
-            <div class="container mx-auto">
-                <h2 class="text-3xl font-bold text-center mb-4">Biểu Đồ Ngày Sinh: 25/03/1995</h2>
-                 <p class="text-center max-w-3xl mx-auto mb-12">
-                    Biểu đồ này phản ánh những tài năng và bài học bẩm sinh chị mang theo. Nhấp vào các con số và mũi tên để khám phá nguồn sức mạnh nội tại và những vùng năng lượng cần được vun bồi.
-                </p>
-                <div class="flex flex-col lg:flex-row items-center justify-center gap-12">
-                    <div class="relative">
-                        <div class="birth-chart-grid shadow-lg rounded-lg overflow-hidden bg-white">
-                            <div class="birth-chart-cell">3</div>
-                            <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-55">55</div>
-                            <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-1">1</div>
-                            <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-99">99</div>
+            <div id="bieu-do-ngay-sinh" class="content-section">
+                <h2 class="text-3xl font-bold text-[#BC6C25] mb-6">Dấu Ấn Ngày Sinh (25/03/1995)</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold text-[#A98467] mb-4">Biểu Đồ Năng Lượng</h3>
+                        <div class="aspect-square max-w-sm mx-auto">
+                            <div class="birth-chart-grid">
+                                <div class="birth-chart-cell">3</div>
+                                <div class="birth-chart-cell"></div>
+                                <div class="birth-chart-cell highlight">99</div>
+                                <div class="birth-chart-cell">2</div>
+                                <div class="birth-chart-cell highlight">55</div>
+                                <div class="birth-chart-cell"></div>
+                                <div class="birth-chart-cell highlight">1</div>
+                                <div class="birth-chart-cell"></div>
+                                <div class="birth-chart-cell"></div>
+                            </div>
                         </div>
-                        <div class="arrow arrow-1-5-9 cursor-pointer" data-tooltip="arrow-159"></div>
                     </div>
-                    <div id="birth-chart-info" class="lg:w-1/2 p-6 bg-white rounded-lg shadow-md min-h-[240px]">
-                        <h3 class="font-bold text-xl mb-2 accent-color">Khám phá Biểu đồ</h3>
-                        <p>Nhấp vào các thành phần của biểu đồ để xem diễn giải chi tiết tại đây.</p>
+                    <div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                            <h3 class="text-xl font-semibold text-[#A98467] mb-3">Điểm Mạnh Nổi Bật: Mũi Tên Quyết Tâm (1-5-9)</h3>
+                            <p class="text-gray-700">Sự hiện diện của dãy số 1-5-9 tạo thành một Mũi tên Quyết tâm, biểu tượng của ý chí sắt đá và sự kiên trì phi thường. Khi đã đặt ra mục tiêu, bạn sẽ dốc toàn lực để theo đuổi đến cùng. Đây chính là động cơ mạnh mẽ giúp bạn thực thi Sứ mệnh 1 - tiên phong và độc lập.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="text-xl font-semibold text-[#A98467] mb-3">Bài Học Cần Rèn Luyện (Số Vắng Mặt)</h3>
+                            <ul class="list-disc list-inside text-gray-700 space-y-2">
+                                <li><strong>Số 4:</strong> Bài học về sự tổ chức, kỷ luật và tính thực tế.</li>
+                                <li><strong>Số 6:</strong> Bài học về sự chăm sóc, trách nhiệm gia đình một cách chủ động.</li>
+                                <li><strong>Số 7:</strong> Bài học về sự chiêm nghiệm, học hỏi qua trải nghiệm để đạt được sự thông tuệ.</li>
+                                <li><strong>Số 8:</strong> Bài học về quản lý tài chính, quyền lực và sự độc lập về vật chất.</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <section id="lo-trinh" class="py-16 px-6">
-            <div class="container mx-auto">
-                <h2 class="text-3xl font-bold text-center mb-4">Lộ Trình Cuộc Đời</h2>
-                <p class="text-center max-w-3xl mx-auto mb-12">
-                    Hành trình của chị được chia thành các giai đoạn với những đỉnh cao thành tựu và bài học thử thách riêng. Biểu đồ dưới đây trực quan hóa các chặng đường đó. Di chuột qua các điểm mốc để thấy rõ cơ hội và thách thức ở từng giai đoạn.
-                </p>
-                <div class="chart-container bg-white p-4 rounded-lg shadow-lg">
-                    <canvas id="lifePathChart"></canvas>
-                </div>
-            </div>
-        </section>
-        
-        <section id="nam-hien-tai" class="py-16 px-6 secondary-bg">
-            <div class="container mx-auto text-center">
-                <h2 class="text-3xl font-bold mb-4">Giao Thời Quan Trọng: 2024 - 2025</h2>
-                <p class="max-w-3xl mx-auto mb-8">
-                    Chị đang ở một thời điểm chuyển giao vô cùng đặc biệt, nơi một chu kỳ cũ khép lại và một hành trình mới mở ra, được khuếch đại bởi Đỉnh cao đầu tiên trong đời.
-                </p>
-                <div class="flex flex-col md:flex-row justify-center gap-8">
-                    <div class="bg-white p-6 rounded-lg shadow-md flex-1">
-                        <p class="text-5xl font-bold accent-color mb-2">9</p>
-                        <h3 class="text-xl font-bold mb-2">Năm Cá Nhân 2024</h3>
-                        <p>Năm của sự hoàn tất, chiêm nghiệm và buông bỏ. Đây là lúc để chị nhìn lại, rút ra bài học và dọn dẹp không gian để chuẩn bị cho một chương mới.</p>
+            <div id="hanh-trinh-cuoc-doi" class="content-section">
+                <h2 class="text-3xl font-bold text-[#BC6C25] mb-2">Hành Trình Cuộc Đời - 4 Đỉnh Cao</h2>
+                <p class="mb-6 text-lg text-gray-700">Cuộc đời bạn được chia thành 4 giai đoạn chính, mỗi giai đoạn mang một chủ đề và bài học riêng, được thể hiện qua biểu đồ dưới đây.</p>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div class="chart-container">
+                        <canvas id="pinnacleChart"></canvas>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex-1 border-2 border-amber-500">
-                        <p class="text-5xl font-bold text-amber-600 mb-2">1</p>
-                        <h3 class="text-xl font-bold mb-2">Năm Cá Nhân 2025</h3>
-                        <p>Năm khởi đầu một chu kỳ 9 năm mới. Năng lượng của sự gieo mầm, bắt đầu dự án mới, và khẳng định mạnh mẽ vai trò lãnh đạo, tự chủ của bản thân.</p>
+                </div>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-bold text-[#A98467]">Đỉnh 1 (0-29 tuổi) - Số 1:</h3>
+                        <p>Giai đoạn khẳng định bản thân, học cách độc lập và tự chủ. Đỉnh điểm là năm 29 tuổi (2024), kết thúc một chu kỳ để mở ra hành trình mới.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-bold text-[#A98467]">Đỉnh 2 (30-38 tuổi) - Số 4:</h3>
+                        <p>Thời kỳ tập trung xây dựng nền tảng vật chất vững chắc, đòi hỏi sự chăm chỉ, kỷ luật và có trách nhiệm. Đây là cơ hội để bạn lấp đầy số 4 còn thiếu.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-bold text-[#A98467]">Đỉnh 3 (39-47 tuổi) - Số 5:</h3>
+                        <p>Giai đoạn của sự tự do, thay đổi và phiêu lưu. Nhu cầu trải nghiệm những điều mới mẻ và mở rộng các mối quan hệ sẽ lên ngôi.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="font-bold text-[#A98467]">Đỉnh 4 (48-56 tuổi) - Số 9:</h3>
+                        <p>Thời kỳ của lòng nhân ái, trí tuệ và sự cống hiến cho cộng đồng. Bạn sẽ được kêu gọi để phục vụ và chia sẻ kiến thức đã tích lũy.</p>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <section id="loi-khuyen" class="py-16 px-6">
-            <div class="container mx-auto">
-                <h2 class="text-3xl font-bold text-center mb-12">Lộ Trình Phát Triển Toàn Diện</h2>
-                <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-3 accent-color">Về Sự Nghiệp</h3>
-                        <p>Phát huy phong cách lãnh đạo bằng trí tuệ và sự phân tích. Sức mạnh của chị đến từ sự hiểu biết sâu sắc. Hãy tin vào trực giác (Đường đời 7) và sự quyết đoán (Sứ mệnh 1) để trở thành chuyên gia xuất sắc trong lĩnh vực của mình.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-3 accent-color">Về Đời Sống Cá Nhân</h3>
-                        <p>Ưu tiên tạo không gian tĩnh lặng để "sạc lại pin". Thiền định, đọc sách, thể thao nhẹ nhàng là điều kiện tiên quyết để chị hoàn thành tốt các vai trò khác. Đừng cảm thấy tội lỗi khi dành thời gian cho riêng mình.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-3 accent-color">Về Mối Quan Hệ</h3>
-                        <p>Trân trọng những mối quan hệ chất lượng. Việc vun đắp cho các kết nối sâu sắc sẽ mang lại bình yên (Linh hồn 6). Hãy thực hành mở lòng chia sẻ suy ngẫm của mình với người chị tin tưởng để giải tỏa căng thẳng và gắn kết hơn.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-3 accent-color">Hướng Về Tương Lai</h3>
-                        <p>Đón nhận năm 2025 và Đỉnh cao 1 như cơ hội vàng để tái định vị bản thân và tỏa sáng. Bắt đầu rèn luyện tính kỷ luật và kiên trì ngay từ bây giờ để chuẩn bị cho Đỉnh cao 2, nơi sự nỗ lực bền bỉ sẽ được đền đáp xứng đáng.</p>
-                    </div>
+            <div id="loi-khuyen" class="content-section">
+                <h2 class="text-3xl font-bold text-[#BC6C25] mb-6">Lời Khuyên Phát Triển Cá Nhân</h2>
+                <div class="space-y-4" id="accordion-container">
                 </div>
             </div>
-        </section>
-    </main>
-
-    <footer class="bg-gray-800 text-white text-center p-6">
-        <p>Báo cáo Thần số học tương tác dành cho chị Hà Thị Ngọc Duyên.</p>
-        <p>&copy; 2025. Được tạo ra với sự thấu hiểu.</p>
-    </footer>
+        </main>
+    </div>
 
     <script>
         const numerologyData = {
             coreNumbers: [
-                { id: 'life-path', title: 'Đường Đời 7', subtitle: 'Nhà Thông Thái, Người Tìm Kiếm Chân Lý', content: 'Hành trình của chị là hành trình của một nhà thông thái, tìm kiếm chân lý thông qua trải nghiệm và chiêm nghiệm nội tâm. Chị sở hữu tư duy phân tích sắc bén, trực giác mạnh mẽ nhưng cũng có xu hướng sống khép kín. Lối sống bình yên, độc thân là biểu hiện tự nhiên của năng lượng này.' },
-                { id: 'mission', title: 'Sứ Mệnh 1', subtitle: 'Nhà Lãnh Đạo, Người Tiên Phong', content: 'Chị được kêu gọi để trở thành một người tiên phong, độc lập và sáng tạo. Năng lượng này lý giải cho vị trí Trưởng phòng và khát vọng sống tự chủ. Thách thức là cân bằng cái tôi lớn, tránh độc đoán và học cách lắng nghe.' },
-                { id: 'soul', title: 'Linh Hồn 6', subtitle: 'Người Chăm Sóc, Tình Yêu, Hòa Hợp', content: 'Ẩn sâu bên trong là một trái tim ấm áp, khao khát được yêu thương, chăm sóc và tạo ra sự hòa hợp. Chị tìm thấy sự bình yên khi vun đắp cho những người thân yêu. Thách thức là tránh hy sinh bản thân quá mức.' },
-                { id: 'personality', title: 'Nhân Cách 4', subtitle: 'Người Kiến Tạo, Thực Tế, Đáng Tin Cậy', content: 'Thế giới bên ngoài nhìn nhận chị là một người có tổ chức, kỷ luật, đáng tin cậy và thực tế. Đây là lợi thế lớn trong vai trò quản lý, tạo ra sự tin tưởng. Vẻ ngoài này đôi khi che giấu thế giới nội tâm phức tạp bên trong.' }
-            ],
-            birthChart: {
-                'number-1': { title: 'Số 1', content: 'Đại diện cho cái tôi, sự độc lập và khả năng lãnh đạo. Đây là nền tảng cho Sứ mệnh 1 của chị.' },
-                'number-55': { title: 'Hai Số 5 (55)', content: 'Cho thấy đời sống cảm xúc mãnh liệt và khát khao tự do vô cùng mạnh mẽ. Chị có sức hút tự nhiên nhưng cần học cách cân bằng cảm xúc, tránh nghiêm trọng hóa vấn đề.' },
-                'number-99': { title: 'Hai Số 9 (99)', content: 'Cho thấy chị là người sống có lý tưởng, hoài bão và tinh thần trách nhiệm lớn lao. Cần lưu ý tránh đặt kỳ vọng quá cao vào bản thân và người khác.' },
-                'arrow-159': { title: 'Mũi Tên Quyết Tâm (1-5-9)', content: 'Đây là nguồn sức mạnh vượt trội, mang lại ý chí phi thường và sự kiên trì theo đuổi mục tiêu. Nó chính là động lực giúp chị dung hòa mâu thuẫn giữa Đường đời 7 (hướng nội) và Sứ mệnh 1 (hướng ngoại). Cần lưu ý tránh biến quyết tâm thành cố chấp.' }
-            },
-            lifePathChart: {
-                labels: ['0', '10', '20', '29', '38', '47', '56', '65'],
-                pinnacles: [null, null, null, 1, 4, 5, 9, null],
-                challenges: [4, 4, 4, 1, 1, 1, 1, 1],
-                tooltips: {
-                    pinnacles: [
-                        '', '', '', 
-                        'Đỉnh 1 (29 tuổi): Con số 1 - Giai đoạn khẳng định bản thân, độc lập, bắt đầu dự án riêng.',
-                        'Đỉnh 2 (38 tuổi): Con số 4 (Nợ nghiệp 13/4) - Giai đoạn xây dựng nền tảng vững chắc, đòi hỏi nỗ lực và kỷ luật phi thường.',
-                        'Đỉnh 3 (47 tuổi): Con số 5 - Giai đoạn của sự tự do, thay đổi lớn, khám phá và du lịch.',
-                        'Đỉnh 4 (56 tuổi): Con số 9 - Giai đoạn của trí tuệ, cống hiến cho cộng đồng.',
-                        ''
-                    ],
-                    challenges: [
-                        'Thử thách 1 (0-29 tuổi): Con số 4 - Bài học về kỷ luật, kiên trì, vượt qua giới hạn.',
-                        'Thử thách 1 (0-29 tuổi): Con số 4 - Bài học về kỷ luật, kiên trì, vượt qua giới hạn.',
-                        'Thử thách 1 (0-29 tuổi): Con số 4 - Bài học về kỷ luật, kiên trì, vượt qua giới hạn.',
-                        'Thử thách 2 (Từ 29 tuổi): Con số 1 - Bài học về sự tự tin, tự chủ, dám là chính mình.',
-                        'Thử thách 2 (Từ 29 tuổi): Con số 1 - Bài học về sự tự tin, tự chủ, dám là chính mình.',
-                        'Thử thách 2 (Từ 29 tuổi): Con số 1 - Bài học về sự tự tin, tự chủ, dám là chính mình.',
-                        'Thử thách 2 (Từ 29 tuổi): Con số 1 - Bài học về sự tự tin, tự chủ, dám là chính mình.',
-                        'Thử thách 2 (Từ 29 tuổi): Con số 1 - Bài học về sự tự tin, tự chủ, dám là chính mình.',
-                    ]
+                {
+                    id: 'duong-doi',
+                    name: 'Đường Đời 7',
+                    title: 'Hành Trình Của Người Tìm Kiếm Chân Lý',
+                    content: 'Con đường của bạn là một hành trình hướng vào bên trong, của sự chiêm nghiệm, phân tích và tìm kiếm chân lý. Bạn sở hữu một tâm hồn thông thái, luôn khao khát tìm hiểu sự thật sâu xa của vạn vật. Sự bình yên của bạn đến từ việc thấu hiểu tường tận. Thách thức lớn nhất là những bài học thường đến qua sự mất mát, nhưng đó là cơ hội để thanh lọc và đạt đến tầng nhận thức sâu sắc hơn. Vì không có sẵn số 7 trong biểu đồ ngày sinh, bạn phải tự mình viết nên cuốn sách thông tuệ của đời mình qua trải nghiệm.'
+                },
+                {
+                    id: 'su-menh',
+                    name: 'Sứ Mệnh 1',
+                    title: 'Con Đường Của Người Tiên Phong Độc Lập',
+                    content: 'Sứ mệnh của bạn là trở thành người tiên phong, người lãnh đạo và là hiện thân của sự độc lập. Năng lượng này thôi thúc bạn phải tự đứng trên đôi chân của mình, tự ra quyết định và kiến tạo con đường riêng. Điều này lý giải mạnh mẽ cho việc bạn "thích sống tự chủ". Bạn có khả năng sáng tạo dồi dào và quyết tâm biến ý tưởng thành hiện thực. Thách thức là cần trở thành một nhà lãnh đạo biết truyền cảm hứng, thay vì một người chỉ huy áp đặt.'
+                },
+                {
+                    id: 'linh-hon',
+                    name: 'Linh Hồn 6',
+                    title: 'Khát Vọng Về Tình Yêu và Sự Hòa Hợp',
+                    content: 'Sâu thẳm bên trong, bạn khao khát một môi trường sống hài hòa, yên bình, tràn ngập tình yêu thương. Bạn cảm thấy trọn vẹn nhất khi được chăm sóc và thể hiện trách nhiệm với những người mình yêu quý. Điều này giải thích tại sao dù yêu thích độc thân, bạn vẫn cần "một vài người bạn thân hiền lành" - họ chính là "gia đình" mà bạn lựa chọn, là nơi để năng lượng yêu thương của số 6 được thể hiện. Thách thức là tránh hy sinh bản thân quá mức hoặc đặt ra tiêu chuẩn cầu toàn.'
+                },
+                {
+                    id: 'nhan-cach',
+                    name: 'Nhân Cách 4',
+                    title: 'Ấn Tượng Về Sự Ổn Định và Đáng Tin Cậy',
+                    content: 'Thế giới bên ngoài nhìn nhận bạn là một người thực tế, đáng tin cậy, có tổ chức và kiên định. Bạn toát ra vẻ ngoài chỉn chu, cẩn thận và luôn có kế hoạch. Mọi người cảm thấy an tâm khi làm việc cùng bạn. Điều thú vị là năng lượng này không phải bẩm sinh (do thiếu số 4 trong biểu đồ), cho thấy bạn đã nỗ lực một cách có ý thức để xây dựng hình ảnh đó, điều này có thể tạo ra áp lực ngầm và càng làm sáng tỏ mong muốn sống "nhẹ nhàng" của bạn.'
+                },
+                {
+                    id: 'thai-do',
+                    name: 'Thái Độ 8',
+                    title: 'Năng Lượng Của Sự Thực Thi và Hiệu Quả',
+                    content: 'Khi đối mặt với cuộc sống, thái độ tự nhiên của bạn là hướng đến quyền lực, hiệu quả và sự độc lập. Bạn tiếp cận các tình huống với một tư duy mạnh mẽ, có khả năng nắm bắt và giải quyết vấn đề một cách dứt khoát. Năng lượng này hỗ trợ mạnh mẽ cho Sứ mệnh 1 của bạn, giúp bạn biến ý tưởng thành kết quả cụ thể. Bạn có xu hướng kiểm soát tình hình và mong muốn thấy được thành quả vật chất từ nỗ lực của mình.'
                 }
-            }
+            ],
+            advice: [
+                {
+                    title: 'Phát Huy Tiềm Năng (Số 7 & 1)',
+                    content: '<strong>Với Đường đời 7:</strong> Tiếp tục dành thời gian chất lượng cho bản thân qua việc đọc sách, thiền định và kết nối với thiên nhiên. Các ngành nghề như nghiên cứu, phân tích, viết lách rất phù hợp. <br><strong>Với Sứ mệnh 1:</strong> Đừng ngần ngại khởi xướng các dự án cá nhân. Hãy can đảm đi con đường riêng dù khác biệt, vì đó chính là sứ mệnh của bạn.'
+                },
+                {
+                    title: 'Chuyển Hóa Thách Thức: Bổ sung số 4 (Thực tế)',
+                    content: 'Tập thói quen lập kế hoạch chi tiết cho tuần/tháng. Tham gia các hoạt động đòi hỏi sự tỉ mỉ như làm vườn, nấu ăn theo công thức, hoặc sắp xếp lại không gian sống một cách khoa học để rèn luyện tính tổ chức.'
+                },
+                {
+                    title: 'Chuyển Hóa Thách Thức: Bổ sung số 6 (Yêu thương)',
+                    content: 'Chủ động thể hiện sự chăm sóc đối với những người bạn thân. Có thể tham gia các hoạt động cộng đồng nhỏ. Nuôi dưỡng một không gian sống đẹp đẽ, hài hòa cũng là cách kích hoạt năng lượng số 6.'
+                },
+                {
+                    title: 'Chuyển Hóa Thách Thức: Bổ sung số 7 (Trải nghiệm)',
+                    content: 'Tích cực học một kỹ năng mới không liên quan đến công việc. Thử đi du lịch một mình đến những nơi yên tĩnh. Duy trì thói quen viết nhật ký để chiêm nghiệm về các bài học trong cuộc sống.'
+                },
+                {
+                    title: 'Chuyển Hóa Thách Thức: Bổ sung số 8 (Hiệu quả)',
+                    content: 'Tìm hiểu các khóa học nhỏ về quản lý tài chính cá nhân. Đặt ra các mục tiêu rõ ràng và có thể đo lường được. Tập luyện thể thao đều đặn để tăng cường sức mạnh và sự độc lập về thể chất.'
+                },
+                {
+                    title: 'Định Hướng Sự Nghiệp & Mối Quan Hệ',
+                    content: '<strong>Sự nghiệp:</strong> Các lĩnh vực đòi hỏi cả chiều sâu chuyên môn (7) và sự độc lập (1) rất phù hợp, như: nhà nghiên cứu, chuyên gia phân tích, nhà văn, nhà tư vấn chiến lược, hoặc người sáng lập dự án kinh doanh chuyên môn cao. <br><strong>Mối quan hệ:</strong> Bạn sẽ hòa hợp nhất với những người tôn trọng không gian riêng, có chiều sâu nội tâm và không đòi hỏi sự chú ý liên tục. Những người có số chủ đạo 4, 6, 7 có thể là bạn đồng hành tốt.'
+                }
+            ]
         };
 
         document.addEventListener('DOMContentLoaded', function() {
-            const coreNumbersGrid = document.getElementById('core-numbers-grid');
-            numerologyData.coreNumbers.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-xl transition-shadow';
-                card.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-xl font-bold">${item.title}</h3>
-                            <p class="text-gray-500">${item.subtitle}</p>
-                        </div>
-                        <span class="text-2xl transform transition-transform duration-300">&#9662;</span>
-                    </div>
-                    <div class="card-content mt-4 text-gray-700">
-                        <p>${item.content}</p>
-                    </div>
-                `;
-                coreNumbersGrid.appendChild(card);
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const coreNumbersTabsContainer = document.getElementById('core-numbers-tabs');
+            const coreNumbersContentContainer = document.getElementById('core-numbers-content');
+            const accordionContainer = document.getElementById('accordion-container');
 
-                card.addEventListener('click', () => {
-                    const content = card.querySelector('.card-content');
-                    const arrow = card.querySelector('span');
-                    if (content.style.maxHeight) {
-                        content.style.maxHeight = null;
-                        arrow.style.transform = 'rotate(0deg)';
-                    } else {
-                        document.querySelectorAll('.card-content').forEach(c => c.style.maxHeight = null);
-                        document.querySelectorAll('#core-numbers-grid span').forEach(a => a.style.transform = 'rotate(0deg)');
-                        content.style.maxHeight = content.scrollHeight + "px";
-                        arrow.style.transform = 'rotate(180deg)';
-                    }
+            function showSection(hash) {
+                const targetId = hash.substring(1);
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
                 });
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.getAttribute('href') === hash);
+                });
+            }
+            
+            document.getElementById('navigation').addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    e.preventDefault();
+                    const hash = e.target.getAttribute('href');
+                    history.pushState(null, null, hash);
+                    showSection(hash);
+                }
             });
 
-            const birthChartInfo = document.getElementById('birth-chart-info');
-            const birthChartElements = document.querySelectorAll('[data-tooltip]');
-            birthChartElements.forEach(element => {
-                element.addEventListener('click', () => {
-                    birthChartElements.forEach(el => el.classList.remove('birth-chart-active'));
-                    element.classList.add('birth-chart-active');
+            window.addEventListener('popstate', function() {
+                showSection(window.location.hash || '#tong-quan');
+            });
+            
+            showSection(window.location.hash || '#tong-quan');
 
-                    const tooltipKey = element.getAttribute('data-tooltip');
-                    const info = numerologyData.birthChart[tooltipKey];
-                    if (info) {
-                        birthChartInfo.innerHTML = `
-                            <h3 class="font-bold text-xl mb-2 accent-color">${info.title}</h3>
-                            <p>${info.content}</p>
-                        `;
+            function setupCoreNumbers() {
+                numerologyData.coreNumbers.forEach((item, index) => {
+                    const button = document.createElement('button');
+                    button.textContent = item.name;
+                    button.className = 'tab-button px-4 py-2 text-sm font-medium border border-gray-300 rounded-full transition';
+                    button.dataset.target = item.id;
+                    if (index === 0) {
+                        button.classList.add('active');
+                    }
+                    coreNumbersTabsContainer.appendChild(button);
+                });
+
+                coreNumbersTabsContainer.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('tab-button')) {
+                        const targetId = e.target.dataset.target;
+                        coreNumbersTabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                        displayCoreNumberContent(targetId);
                     }
                 });
-            });
+                
+                displayCoreNumberContent(numerologyData.coreNumbers[0].id);
+            }
 
-            const ctx = document.getElementById('lifePathChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: numerologyData.lifePathChart.labels,
-                    datasets: [{
-                        label: 'Đỉnh Cao',
-                        data: numerologyData.lifePathChart.pinnacles,
-                        borderColor: '#E2725B',
-                        backgroundColor: 'rgba(226, 114, 91, 0.2)',
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#E2725B',
-                    }, {
-                        label: 'Thử Thách',
-                        data: numerologyData.lifePathChart.challenges,
-                        borderColor: '#8FBC8F',
-                        backgroundColor: 'rgba(143, 188, 143, 0.2)',
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#8FBC8F',
-                        stepped: true,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Các Giai Đoạn Đỉnh Cao và Thử Thách Theo Độ Tuổi'
+            function displayCoreNumberContent(id) {
+                const item = numerologyData.coreNumbers.find(n => n.id === id);
+                if (item) {
+                    coreNumbersContentContainer.innerHTML = `
+                        <h3 class="text-2xl font-semibold text-[#A98467] mb-3">${item.title}</h3>
+                        <p class="text-gray-700 leading-relaxed">${item.content}</p>
+                    `;
+                }
+            }
+            
+            function setupAccordion() {
+                numerologyData.advice.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'bg-white border border-gray-200 rounded-lg shadow-sm';
+                    
+                    const header = document.createElement('button');
+                    header.className = 'accordion-header w-full flex justify-between items-center p-4 text-left font-semibold text-[#A98467]';
+                    header.innerHTML = `
+                        <span>${item.title}</span>
+                        <span class="transform transition-transform duration-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.className = 'accordion-content';
+                    content.innerHTML = `<div class="p-4 pt-0 text-gray-700 leading-relaxed">${item.content}</div>`;
+                    
+                    itemDiv.appendChild(header);
+                    itemDiv.appendChild(content);
+                    accordionContainer.appendChild(itemDiv);
+                    
+                    header.addEventListener('click', () => {
+                        const isExpanded = content.style.maxHeight && content.style.maxHeight !== '0px';
+                        
+                        document.querySelectorAll('.accordion-content').forEach(el => el.style.maxHeight = '0px');
+                        document.querySelectorAll('.accordion-header span:last-child').forEach(el => el.classList.remove('rotate-180'));
+
+                        if (!isExpanded) {
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                            header.querySelector('span:last-child').classList.add('rotate-180');
+                        }
+                    });
+                });
+            }
+
+            function createPinnacleChart() {
+                const ctx = document.getElementById('pinnacleChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['0', '29', '30', '38', '39', '47', '48', '56+'],
+                        datasets: [{
+                            label: 'Con Số Đỉnh Cao',
+                            data: [1, 1, 4, 4, 5, 5, 9, 9],
+                            borderColor: '#D4A373',
+                            backgroundColor: '#FEFAE0',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#BC6C25',
+                            pointRadius: 5,
+                            stepped: true,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 10,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Độ tuổi'
+                                }
+                            }
                         },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(context) {
-                                    const dataIndex = context[0].dataIndex;
-                                    const datasetIndex = context[0].datasetIndex;
-                                    if (datasetIndex === 0) { 
-                                        return numerologyData.lifePathChart.tooltips.pinnacles[dataIndex];
-                                    }
-                                    if (datasetIndex === 1) {
-                                        return numerologyData.lifePathChart.tooltips.challenges[dataIndex];
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(context) {
+                                        const index = context[0].dataIndex;
+                                        if (index <= 1) return 'Đỉnh 1: 0-29 tuổi';
+                                        if (index <= 3) return 'Đỉnh 2: 30-38 tuổi';
+                                        if (index <= 5) return 'Đỉnh 3: 39-47 tuổi';
+                                        return 'Đỉnh 4: 48-56+ tuổi';
+                                    },
+                                    label: function(context) {
+                                        return `Con số: ${context.raw}`;
                                     }
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Giá trị Con Số'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Độ Tuổi'
-                            }
-                        }
                     }
-                }
-            });
+                });
+            }
+
+            setupCoreNumbers();
+            setupAccordion();
+            createPinnacleChart();
         });
     </script>
 </body>
