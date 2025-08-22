@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Calm Harmony -->
     <!-- Application Structure Plan: The SPA uses a thematic, narrative scroll structure. It starts with a high-level summary (Hero, interactive Energy Map), delves into specifics (interactive Birth Chart), visualizes the life path over time (Chart.js Timeline), and concludes with actionable advice. This user flow is designed for intuitive self-exploration, moving from 'who you are' to 'where you're going', which is more engaging than the original report's linear text format. -->
-    <!-- Visualization & Content Choices: Core Numbers -> Goal: Inform/Organize -> Viz: Interactive HTML cards -> Interaction: Click to reveal details -> Justification: Reduces initial clutter. | Birth Chart -> Goal: Organize/Inform -> Viz: HTML/CSS Grid -> Interaction: Hover to see meanings -> Justification: Visually connects numbers to their positions. | Life Journey -> Goal: Show Change -> Viz: Chart.js Line Chart -> Interaction: Hover tooltips -> Justification: Intuitively shows progression and key stages over time. -> Library: Chart.js (Canvas). -->
+    <!-- Visualization & Content Choices: Core Numbers -> Goal: Inform/Organize -> Viz: Interactive HTML cards -> Interaction: Click to reveal details -> Justification: Reduces initial clutter. | Birth Chart -> Goal: Organize/Inform -> Viz: HTML/CSS Grid -> Interaction: Click to see meanings -> Justification: Visually connects numbers to their positions, better for mobile. | Life Journey -> Goal: Show Change -> Viz: Chart.js Line Chart -> Interaction: Hover tooltips -> Justification: Intuitively shows progression and key stages over time. -> Library: Chart.js (Canvas). -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -47,11 +47,13 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: #795548;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .arrow {
             position: absolute;
             background-color: rgba(226, 114, 91, 0.3);
             pointer-events: none;
+            transition: background-color 0.3s;
         }
         .arrow-1-5-9 {
             width: 100%;
@@ -62,6 +64,10 @@
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.5s ease-in-out;
+        }
+        .birth-chart-active {
+            background-color: #FFF8E1 !important;
+            border: 2px solid #E2725B !important;
         }
     </style>
 </head>
@@ -106,7 +112,7 @@
             <div class="container mx-auto">
                 <h2 class="text-3xl font-bold text-center mb-4">Biểu Đồ Ngày Sinh: 25/03/1995</h2>
                  <p class="text-center max-w-3xl mx-auto mb-12">
-                    Biểu đồ này phản ánh những tài năng và bài học bẩm sinh chị mang theo. Di chuột qua các con số và mũi tên để khám phá nguồn sức mạnh nội tại và những vùng năng lượng cần được vun bồi.
+                    Biểu đồ này phản ánh những tài năng và bài học bẩm sinh chị mang theo. Nhấp vào các con số và mũi tên để khám phá nguồn sức mạnh nội tại và những vùng năng lượng cần được vun bồi.
                 </p>
                 <div class="flex flex-col lg:flex-row items-center justify-center gap-12">
                     <div class="relative">
@@ -115,17 +121,17 @@
                             <div class="birth-chart-cell"></div>
                             <div class="birth-chart-cell"></div>
                             <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell" data-tooltip="number-55">55</div>
+                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-55">55</div>
                             <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell" data-tooltip="number-1">1</div>
+                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-1">1</div>
                             <div class="birth-chart-cell"></div>
-                            <div class="birth-chart-cell" data-tooltip="number-99">99</div>
+                            <div class="birth-chart-cell cursor-pointer" data-tooltip="number-99">99</div>
                         </div>
-                        <div class="arrow arrow-1-5-9" data-tooltip="arrow-159"></div>
+                        <div class="arrow arrow-1-5-9 cursor-pointer" data-tooltip="arrow-159"></div>
                     </div>
                     <div id="birth-chart-info" class="lg:w-1/2 p-6 bg-white rounded-lg shadow-md min-h-[240px]">
                         <h3 class="font-bold text-xl mb-2 accent-color">Khám phá Biểu đồ</h3>
-                        <p>Di chuột lên các thành phần của biểu đồ để xem diễn giải chi tiết tại đây.</p>
+                        <p>Nhấp vào các thành phần của biểu đồ để xem diễn giải chi tiết tại đây.</p>
                     </div>
                 </div>
             </div>
@@ -270,10 +276,13 @@
             });
 
             const birthChartInfo = document.getElementById('birth-chart-info');
-            const birthChartCells = document.querySelectorAll('[data-tooltip]');
-            birthChartCells.forEach(cell => {
-                cell.addEventListener('mouseenter', () => {
-                    const tooltipKey = cell.getAttribute('data-tooltip');
+            const birthChartElements = document.querySelectorAll('[data-tooltip]');
+            birthChartElements.forEach(element => {
+                element.addEventListener('click', () => {
+                    birthChartElements.forEach(el => el.classList.remove('birth-chart-active'));
+                    element.classList.add('birth-chart-active');
+
+                    const tooltipKey = element.getAttribute('data-tooltip');
                     const info = numerologyData.birthChart[tooltipKey];
                     if (info) {
                         birthChartInfo.innerHTML = `
